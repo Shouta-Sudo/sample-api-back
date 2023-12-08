@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+  app:
+    container_name: laravel_app
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    tty: true
+    ports:
+      - 80:80
+      - 8443:443
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/app/apache2/default-ssl.conf:/etc/apache2/sites-available/default-ssl.conf
+      - ./docker/ssl/server.crt:/etc/ssl/certs/server.crt
+      - ./docker/ssl/server.key:/etc/ssl/private/server.key
+    depends_on:
+      - db
+      - mailpit
+  
+  db:
+    container_name: laravel_db
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=laravel_db
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=test_user
+      - MYSQL_PASSWORD=pwd
+      - TZ="Asia/Tokyo"
+    tty: true
+    ports:
+      - 13306:3306
+    volumes:
+      - ./docker/db/storage:/var/lib/mysql
+      - ./docker/db/server.cnf:/etc/mysql/conf.d/server.cnf
+      - ./docker/db/initdb/:/docker-entrypoint-initdb.d
+  
+  phpmyadmin:
+    image: phpmyadmin:latest
+    tty: true
+    ports:
+      - 8080:80
+    environment:
+      - PMA_HOST=mysql
+      - PMA_USER=test_user
+      - PMA_PASSWORD=pwd
+    depends_on:
+      - db
+  
+  mailpit:
+    container_name: laravel_FSMTP
+    image: axllent/mailpit:v1.9
+    tty: true
+    ports:
+      - 8025:8025
+      - 1025:1025
+    
+
+volumes:
+  storage:
+

@@ -2,6 +2,7 @@
 
 
 ## Directory structure
+```
 root/
 ├── docker/
 │   ├── app/
@@ -17,6 +18,7 @@ root/
 ├── src/   .......................laravelソースディレクトリ
 ├── docker-compose.yml
 └── README. md
+```
 
 - ※備考：
     mailpitをDockerfileを用いてビルドするとき、Dockercomposeは以下の通りとなる；
@@ -104,11 +106,25 @@ docker exec -it laravel_app bash
 composer create-project "laravel/laravel=~9.0" --prefer-dist .
 ```
 
-5. 作成したlaravelディレクトリの全てにRWX権限を付与
+5. 作成したlaravelディレクトリにRWX権限を付与
 ```
-chmod -R 777 .
+chmod -R 777 storage
 ```
 
+6. php artisan初期処理
+```
+php artisan key:generate
+
+# シンボリックリンク #
+php artinsa storage:link
+
+# cache生成 #
+php artisan optimize
+php artisan view:cache
+
+# ※cache削除するときは； #
+php artisan optimize:clear
+```
 
 ## laravel setup
 1. .env　編集

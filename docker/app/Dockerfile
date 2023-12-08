@@ -83,8 +83,8 @@ RUN curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/
     && apt-get install -y yarn
 
 # Xdebugインストール
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
+# RUN pecl install xdebug \
+#     && docker-php-ext-enable xdebug
 
 # laravelに必要なmodRewriteの有効化
 RUN mv /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled

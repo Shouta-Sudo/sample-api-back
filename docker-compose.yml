@@ -10,6 +10,8 @@ services:
     ports:
       - 80:80
       - 8443:443
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - ./src:/var/www/html
       - ./docker/app/apache2/default-ssl.conf:/etc/apache2/sites-available/default-ssl.conf

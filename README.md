@@ -120,6 +120,11 @@ chmod -R 777 storage
 
 6. php artisan初期処理
 ```bash
+composer update
+
+# リモートリポジトリからプルした場合；
+cp .env.example .env
+
 php artisan key:generate
 
 # シンボリックリンク #
@@ -131,6 +136,8 @@ php artisan optimize
 
 # ※cache削除するときは； #
 php artisan optimize:clear
+
+php artisan migrate
 ```
 
 
@@ -163,7 +170,9 @@ DB_PASSWORD=pwd
         
         2. configを少々修正
         ```js:/vite.config.js
+        plugins: [
         // 略
+        ],
         server: {
             hmr: {
                 host: 'localhost',
@@ -274,17 +283,17 @@ DB_PASSWORD=pwd
         
     
     - 認証系バリデーションメッセージ日本語化
-        0. 前提
+        1. 前提
         先述のapp.php編集において、言語周辺を"ja"に変更していること。
         
-        1. インストール
+        2. インストール
         ```bash
         php -r "copy('https://readouble.com/laravel/8.x/ja/install-ja-lang-files.php', 'install-ja-lang.php');"
         php -f install-ja-lang.php
         php -r "unlink('install-ja-lang.php');"
         ```
         
-        2. メッセージ修正
+        3. メッセージ修正
         ```php:/resources/lang/ja/validation
         // 略
         'custom' => [
@@ -303,7 +312,7 @@ DB_PASSWORD=pwd
         ],
         ```
         
-        3. langディレクトリ直下にja.jsonを追加、最低以下の７つを追加(バリデーションメッセージ)
+        4. langディレクトリ直下にja.jsonを追加、最低以下の７つを追加(バリデーションメッセージ)
         ```json:/resources/lang/ja.json
         {
             "The :attribute must be at least :length characters and contain at least one number.": ":attribute は :length 文字以上で、1つ以上の数字が必要です",
@@ -315,7 +324,7 @@ DB_PASSWORD=pwd
             "The :attribute must be at least :length characters.": ":attribute は :length 文字以上でなければなりません",
         }
         ```
-        4. 各bladeの記述を英語⇒日本語の多言語対応にする場合；
+        5. 各bladeの記述を英語⇒日本語の多言語対応にする場合；
         ```php:/resources/views/auth/login.php
         /*
          * 二重波括弧＋アンダーバー2本＋括弧＋シングルクォーテーションで記述。

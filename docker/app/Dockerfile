@@ -68,10 +68,12 @@ RUN mkdir -p /etc/apt/keyrings
 # npmパッケージのインストール
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list\
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs \
+    && apt-get update
 # npm関係のインストール
 RUN apt-get install -y npm \
-    && npm install npm@9.5.1 -g cross-env
+    && apt-get update
+RUN npm install npm@9.5.1 -g cross-env
 # webpackとnodesassのインストール
 RUN npm install webpack --save
 RUN npm install node-sass --nodedir=/usr/bin/node

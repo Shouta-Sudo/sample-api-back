@@ -1,28 +1,27 @@
 FROM php:8.1-apache
 
 # iniファイルの読込
-ADD ./docker/app/php.ini /usr/local/etc/php/
-ADD ./docker/app/apache2/000-default.conf /etc/apache2/sites-enabled/
+COPY ./docker/app/php.ini /usr/local/etc/php/
 
 # Composerインストール
-RUN cd /usr/bin && curl -s http://getcomposer.org/installer | php && ln -s /usr/bin/composer.phar /usr/bin/composer
+COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
 # Middlewareインストール
 # 上から順：
-# gnupg(=GNU Privacy Guard)、暗号化・署名の為のパッケージ（dockerイメージ構築時に必要）
-# ca-certificates（これも認証関係）
-# curl \
-# Git \
-# Vimエディタ(デバッグ・設定など) \
-# zip関連ユーティリティ \
-# zip解凍ユーティリティ \
-# libzip開発ヘッダ \
-# gd拡張モジュール；FreeType開発ヘッダ \
-# gd拡張モジュール；libpng開発ヘッダ \
-# gd拡張モジュール；libjpg開発ヘッダ \
-# Oniguruma開発ヘッダ \
-# SSL関連ヘッダ \
-# MySQL開発ヘッダ \
+# gnupg:                GNU Privacy Guard、暗号化・署名の為のパッケージ（dockerイメージ構築時に必要）
+# ca-certificates:      これも認証関係
+# curl:                 データの送受信
+# git:                  Git
+# vim:                  Vimエディタ
+# zip:                  zip関連ユーティリティ
+# unzip:                zip解凍ユーティリティ
+# libzip-dev:           zipアーカイブの読取・作成・変更する開発ヘッダ
+# libfreetype6-dev:     画像処理ライブラリ拡張モジュール；TrueTypeフォントサポート(GD2版)->pngを含むので、libpngは不要
+# libjpeg62-turbo-dev:  画像処理ライブラリ拡張モジュール；JPEGサポート(GD2版)
+# libpng-dev:           画像処理ライブラリ拡張モジュール；PNGサポート
+# libonig-dev:          Oniguruma正規表現ライブラリ開発ヘッダ
+# libssl-dev:           OpenSSLライブラリ関連ヘッダ
+# default-libmysqlclient-dev:   MySQL開発ヘッダ
 RUN apt-get update \
     && apt-get install -y \
     gnupg \
@@ -34,59 +33,41 @@ RUN apt-get update \
     unzip \
     libzip-dev \
     libfreetype6-dev \
-    libpng-dev \
-    libjpeg-dev \
+    libjpeg62-turbo-dev \
     libonig-dev \
     libssl-dev \
     default-libmysqlclient-dev
 
+# configファイルの読込
+COPY ./docker/app/apache2/000-default.conf /etc/apache2/sites-available/
+COPY ./docker/app/apache2/default-ssl.conf /etc/apache2/sites-available/
+COPY ./docker/app/apache2/fqdn.conf /etc/apache2/conf-available/
+RUN a2enconf fqdn \
+    && a2enmod rewrite
 
-# ApacheのSSLモジュールの有効化
-# RUN a2enmod ssl
-# COPY ./docker/app/apache2/default-ssl.conf /etc/apache2/sites-available/default-ssl.conf
-# COPY ./docker/ssl/server.crt /etc/ssl/certs/server.crt
-# COPY ./docker/ssl/server.key /etc/ssl/private/server.key
-
-# RUN a2ensite default-ssl.conf
-
-# # Apacheを再起動
-# RUN service apache2 restart
+# Apacheを再起動
+RUN service apache2 restart
 
 # pdo_mysql拡張モジュールのインストール（mysqlとの接続が可能に）
 RUN docker-php-ext-install pdo_mysql mysqli
 
-# gd拡張モジュール（FreeType、libjpegのヘッダファイルの場所を指定、libpngはシステム標準場所にあるので通常は不要）
-# -jオプションとnprocコマンドで、使用可能なCPU数を指定してgd拡張モジュールをインストール
-RUN docker-php-ext-configure gd \
-    --with-freetype=/usr/include/ \
-    --with-jpeg=/usr/include \
+# gd拡張モジュールのインストール (-j$(nproc)=使用可能なCPU数を指定)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd
 
-
-# 認証関係のディレクトリ作成
-RUN mkdir -p /etc/apt/keyrings
-# npmパッケージのインストール
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list\
+# nodejs / npmパッケージのインストール
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && rm -rf node_modules \
     && apt-get install -y nodejs \
     && apt-get update
-# npm関係のインストール
-RUN apt-get install -y npm \
-    && apt-get update
 RUN npm install npm@9.5.1 -g cross-env
-# webpackとnodesassのインストール
-RUN npm install webpack --save
-RUN npm install node-sass --nodedir=/usr/bin/node
-
-# yarnをインストール(GPG認証を使用)
-RUN curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/yarn-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/yarn-keyring.gpg] https://dl.yarnpkg.com/debian stable main" > /etc/apt/sources.list.d/yarn.list \
-    && apt-get update \
-    && apt-get install -y yarn
+# webpackのインストール
+RUN npm install webpack
 
 # Xdebugインストール
-RUN pecl install xdebug \
+RUN pecl install xdebug-3.2.2 \
     && docker-php-ext-enable xdebug
+RUN chmod 777 /var/log/xdebug.log
 
 # laravelに必要なmodRewriteの有効化
 RUN mv /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled

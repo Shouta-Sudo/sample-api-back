@@ -1,4 +1,5 @@
 {
+    "version": "0.2.0",
     "configurations": [
     {
         "name": "Listen for Xdebug",
@@ -8,7 +9,7 @@
         "port": 9003,
         "log": true,
         "pathMappings": {
-            "var/www/html": "./src"
+            "var/www/html/": "./src"
         }
     }
     ]
